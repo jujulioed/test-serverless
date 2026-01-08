@@ -1,3 +1,6 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
 name: Build and deploy Java project to Azure Function App - testServerless
 
 on:
@@ -7,40 +10,47 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: testServerless
-  PACKAGE_DIRECTORY: '.'
-  JAVA_VERSION: '17'
+  AZURE_FUNCTIONAPP_NAME: testServerless # set this to your function app name on Azure
+  PACKAGE_DIRECTORY: '.' # set this to the directory which contains pom.xml file
+  JAVA_VERSION: '17' # set this to the java version to use
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
-      - name: Checkout
+      - name: 'Checkout GitHub Action'
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java Sdk ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
+          distribution: 'microsoft'
 
-      - name: Build with Maven
-        run: mvn clean package
-
+      - name: 'Restore Project Dependencies Using Mvn'
+        shell: pwsh
+        run: |
+          pushd './${{ env.PACKAGE_DIRECTORY }}'
+          mvn clean package
+          popd
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_637DE34528514CC0B078B73031A10308 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4FED3929E24A4D35A7D33EE117A9D497 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2FC9AD36D5A94F27825347AC998D68F2 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_CA457C50E65044CBBCCFC0624D61DE60 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_EB41A1258E534CAEAA90F0C7DE0A70D2 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_BE720993FFCD40E8AE383B255E39DBF2 }}
 
-      - name: Deploy Azure Function
+      - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
+        id: fa
         with:
-          app-name: testServerless
-          package: '.'
+          app-name: 'testServerless'
+          slot-name: 'Production'
+          package: '${{ env.PACKAGE_DIRECTORY }}'
           respect-pom-xml: true
+          
